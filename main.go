@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	"go.viam.com/rdk/components/board"
@@ -13,16 +14,19 @@ import (
 
 func main() {
 
-	logger := logging.NewDebugLogger("client")
+	logger := logging.NewDebugLogger("rdk-client")
 
-	// Load environment variables from .env file
 	err := godotenv.Load()
 	if err != nil {
 		logger.Fatal("Error loading .env file")
 	}
 
+	ctx := context.Background()
+	ctxTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	robot, err := client.New(
-		context.Background(),
+		ctxTimeout,
 		os.Getenv("RDK_ROBOT_HOSTNAME"),
 		logger,
 		client.WithDialOptions(rpc.WithEntityCredentials(
@@ -47,7 +51,7 @@ func main() {
 		logger.Error(err)
 		return
 	}
-	garagepiReturnValue, err := garagepiComponent.GPIOPinByName("16")
+	garagepiReturnValue, err := garagepiComponent.GPIOPinByName("37")
 	if err != nil {
 		logger.Error(err)
 		return
