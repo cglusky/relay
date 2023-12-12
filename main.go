@@ -22,7 +22,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	ctxTimeout, cancel := context.WithTimeout(ctx, 5*time.Second)
+	ctxTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	robot, err := client.New(
