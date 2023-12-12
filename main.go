@@ -9,6 +9,7 @@ import (
 	"go.viam.com/rdk/components/board"
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/robot/client"
+	"go.viam.com/rdk/utils"
 	"go.viam.com/utils/rpc"
 )
 
@@ -29,12 +30,10 @@ func main() {
 		ctxTimeout,
 		os.Getenv("RDK_ROBOT_HOSTNAME"),
 		logger,
-		client.WithDialOptions(rpc.WithEntityCredentials(
-			os.Getenv("RDK_ROBOT_API_KEY_ID"),
-			rpc.Credentials{
-				Type:    rpc.CredentialsTypeAPIKey,
-				Payload: os.Getenv("RDK_ROBOT_API_KEY"),
-			})),
+		client.WithDialOptions(rpc.WithCredentials(rpc.Credentials{
+			Type:    utils.CredentialsTypeRobotLocationSecret,
+			Payload: os.Getenv("RDK_ROBOT_LOCATION_SECRET"),
+		})),
 	)
 	if err != nil {
 		logger.Fatal(err)
