@@ -40,7 +40,8 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	defer robot.Close(context.Background())
+	defer robot.Close(ctx)
+
 	logger.Info("Resources:")
 	logger.Info(robot.ResourceNames())
 
