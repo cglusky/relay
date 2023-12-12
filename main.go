@@ -21,13 +21,19 @@ func main() {
 		logger.Fatal("Error loading .env file")
 	}
 
+	robotHostname := os.Getenv("RDK_ROBOT_HOSTNAME")
+	if robotHostname == "" {
+		logger.Fatal("No RDK_ROBOT_HOSTNAME found in env")
+	}
+
 	ctx := context.Background()
 	ctxTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
+	logger.Infof("Client connecting to %s...", robotHostname)
 	robot, err := client.New(
 		ctxTimeout,
-		os.Getenv("RDK_ROBOT_HOSTNAME"),
+		robotHostname,
 		logger,
 		client.WithDialOptions(rpc.WithEntityCredentials(
 			os.Getenv("RDK_ROBOT_API_KEY_ID"),
@@ -39,23 +45,31 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
+	logger.Infof("Client connected to %s...", robotHostname)
 
 	defer robot.Close(ctx)
 
 	logger.Info("Resources:")
 	logger.Info(robot.ResourceNames())
 
-	// Note that the pin supplied is a placeholder. Please change this to a valid pin.
 	// garagepi
-	garagepiComponent, err := board.FromRobot(robot, "garagepi")
+	rpi, err := board.FromRobot(robot, "garagepi")
 	if err != nil {
 		logger.Error(err)
 		return
 	}
-	garagepiReturnValue, err := garagepiComponent.GPIOPinByName("37")
+
+	rpiGPIOPin, err := rpi.GPIOPinByName("37")
 	if err != nil {
 		logger.Error(err)
 		return
 	}
-	logger.Infof("garagepi GPIOPinByName return value: %+v", garagepiReturnValue)
+	logger.Debugf("garagepi GPIOPinByName return value: %+v", rpiGPIOPin)
+
+	rpiGPIOPin.Set(ctx, false, map[string]interface{}{})
+
+	time.Sleep(1 * time.Second)
+
+	rpiGPIOPin.Set(ctx, true, map[string]interface{}{})
+
 }
