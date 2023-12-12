@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"os"
 
 	"github.com/joho/godotenv"
 	"go.viam.com/rdk/components/board"
@@ -12,22 +13,23 @@ import (
 
 func main() {
 
+	logger := logging.NewDebugLogger("client")
+
 	// Load environment variables from .env file
 	err := godotenv.Load()
+	if err != nil {
+		logger.Fatal("Error loading .env file")
+	}
 
-	logger := logging.NewDebugLogger("client")
 	robot, err := client.New(
 		context.Background(),
-		// Replace "garage-main.hq3z6kv5kx.viam.cloud" with your robot's hostname
-		"garage-main.hq3z6kv5kx.viam.cloud",
+		os.Getenv("RDK_ROBOT_HOSTNAME"),
 		logger,
 		client.WithDialOptions(rpc.WithEntityCredentials(
-			// Replace "<API-KEY-ID>" (including brackets) with your robot's api key id
-			"<API-KEY-ID>",
+			os.Getenv("RDK_ROBOT_API_KEY_ID"),
 			rpc.Credentials{
-				Type: rpc.CredentialsTypeAPIKey,
-				// Replace "<API-KEY>" (including brackets) with your robot's api key
-				Payload: "<API-KEY>",
+				Type:    rpc.CredentialsTypeAPIKey,
+				Payload: os.Getenv("RDK_ROBOT_API_KEY"),
 			})),
 	)
 	if err != nil {
