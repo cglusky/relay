@@ -3,6 +3,7 @@ module github.com/cglusky/relay
 go 1.20
 
 require (
+	github.com/joho/godotenv v1.5.1
 	go.viam.com/rdk v0.15.1
 	go.viam.com/utils v0.1.54
 )

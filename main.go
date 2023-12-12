@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 
+	"github.com/joho/godotenv"
 	"go.viam.com/rdk/components/board"
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/robot/client"
@@ -10,9 +11,14 @@ import (
 )
 
 func main() {
+
+	// Load environment variables from .env file
+	err := godotenv.Load()
+
 	logger := logging.NewDebugLogger("client")
 	robot, err := client.New(
 		context.Background(),
+		// Replace "garage-main.hq3z6kv5kx.viam.cloud" with your robot's hostname
 		"garage-main.hq3z6kv5kx.viam.cloud",
 		logger,
 		client.WithDialOptions(rpc.WithEntityCredentials(
