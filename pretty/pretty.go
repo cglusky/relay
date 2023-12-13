@@ -4,17 +4,17 @@ import (
 	"encoding/json"
 )
 
-func NewStringer(a any) *prettierString {
-	return &prettierString{
+func NewStringer(a any) *stringer {
+	return &stringer{
 		ToString: a,
 	}
 }
 
-type prettierString struct {
+type stringer struct {
 	ToString any
 }
 
-func (p *prettierString) String() string {
+func (p *stringer) String() string {
 	b, err := json.MarshalIndent(p.ToString, "", "\t")
 	if err != nil {
 		return ""
