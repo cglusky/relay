@@ -22,16 +22,18 @@ func main() {
 		logger.Fatal("Error loading .env file")
 	}
 
-	robotHostname := os.Getenv("RDK_ROBOT_HOSTNAME")
-	if robotHostname == "" {
-		logger.Fatal("No RDK_ROBOT_HOSTNAME found in env")
-	}
+	// robotHostname := os.Getenv("RDK_ROBOT_HOSTNAME")
+	// if robotHostname == "" {
+	// 	logger.Fatal("No RDK_ROBOT_HOSTNAME found in env")
+	// }
+	robotHostname := "garage.local:37931"
 
 	ctx := context.Background()
 	ctxTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
 	logger.Infof("Client connecting to %s...", robotHostname)
+	mOpts := rpc.DialMulticastDNSOptions{Disable: true}
 	robot, err := client.New(
 		ctxTimeout,
 		robotHostname,
@@ -43,6 +45,7 @@ func main() {
 				Payload: os.Getenv("RDK_ROBOT_API_KEY"),
 			}),
 			rpc.WithDialDebug(),
+			rpc.WithDialMulticastDNSOptions(mOpts),
 		),
 	)
 	if err != nil {
