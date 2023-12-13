@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/cglusky/relay/pretty"
 	"github.com/joho/godotenv"
 	"go.viam.com/rdk/components/board"
 	"go.viam.com/rdk/logging"
@@ -40,7 +41,9 @@ func main() {
 			rpc.Credentials{
 				Type:    rpc.CredentialsTypeAPIKey,
 				Payload: os.Getenv("RDK_ROBOT_API_KEY"),
-			})),
+			}),
+			rpc.WithDialDebug(),
+		),
 	)
 	if err != nil {
 		logger.Fatal(err)
@@ -49,8 +52,12 @@ func main() {
 
 	defer robot.Close(ctx)
 
-	logger.Info("Resources:")
-	logger.Info(robot.ResourceNames())
+	prettyResourceNames, err := pretty.Stringer(robot.ResourceNames())
+	if err != nil {
+		logger.Error(err)
+	} else {
+		logger.Infof("Resources: %s", prettyResourceNames)
+	}
 
 	// garagepi
 	rpi, err := board.FromRobot(robot, "garagepi")
@@ -64,7 +71,8 @@ func main() {
 		logger.Error(err)
 		return
 	}
-	logger.Debugf("garagepi GPIOPinByName return value: %+v", rpiGPIOPin)
+
+	logger.Infof("GPIOPinByName: %v", rpiGPIOPin)
 
 	rpiGPIOPin.Set(ctx, false, map[string]interface{}{})
 

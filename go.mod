@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/joho/godotenv v1.5.1
-	go.viam.com/rdk v0.16.0
+	go.viam.com/rdk v0.16.1-0.20231213204358-54ff7101f812
 	go.viam.com/utils v0.1.54
 )
 
@@ -121,7 +121,7 @@ require (
 	go.uber.org/goleak v1.3.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
-	go.viam.com/api v0.1.237 // indirect
+	go.viam.com/api v0.1.238 // indirect
 	go.viam.com/test v1.1.1-0.20220913152726-5da9916c08a2 // indirect
 	golang.org/x/crypto v0.16.0 // indirect
 	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb // indirect
