@@ -2,28 +2,22 @@ package pretty
 
 import (
 	"encoding/json"
-	"fmt"
 )
 
-type Prettier interface {
-	Stringer(any) (string, error)
-	Printer(any) error
+func NewStringer(a any) *prettierString {
+	return &prettierString{
+		ToString: a,
+	}
 }
 
-func Stringer(a any) (string, error) {
-	s, err := json.MarshalIndent(a, "", "\t")
-	if err != nil {
-		return "", err
-	}
-	return string(s), nil
+type prettierString struct {
+	ToString any
 }
 
-func Printer(a any) error {
-	s, err := json.MarshalIndent(a, "", "\t")
+func (p *prettierString) String() string {
+	b, err := json.MarshalIndent(p.ToString, "", "\t")
 	if err != nil {
-		return err
+		return ""
 	}
-
-	fmt.Println(string(s))
-	return nil
+	return string(b)
 }

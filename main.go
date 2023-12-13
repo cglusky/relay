@@ -42,7 +42,7 @@ func main() {
 				Type:    rpc.CredentialsTypeAPIKey,
 				Payload: os.Getenv("RDK_ROBOT_API_KEY"),
 			}),
-			rpc.WithDialDebug(),
+		//rpc.WithDialDebug(),
 		),
 	)
 	if err != nil {
@@ -52,12 +52,9 @@ func main() {
 
 	defer robot.Close(ctx)
 
-	prettyResourceNames, err := pretty.Stringer(robot.ResourceNames())
-	if err != nil {
-		logger.Error(err)
-	} else {
-		logger.Infof("Resources: %s", prettyResourceNames)
-	}
+	prettyResourceNames := pretty.NewStringer(robot.ResourceNames())
+
+	logger.Infof("Resources: %s", prettyResourceNames)
 
 	// garagepi
 	rpi, err := board.FromRobot(robot, "garagepi")
