@@ -6,16 +6,16 @@ import (
 
 func NewStringer(a any) *stringer {
 	return &stringer{
-		ToString: a,
+		toString: a,
 	}
 }
 
 type stringer struct {
-	ToString any
+	toString any
 }
 
 func (p *stringer) String() string {
-	b, err := json.MarshalIndent(p.ToString, "", "\t")
+	b, err := json.MarshalIndent(p.toString, "", "\t")
 	if err != nil {
 		return ""
 	}
