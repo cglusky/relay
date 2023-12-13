@@ -33,18 +33,18 @@ func main() {
 		client.WithDialOptions(rpc.WithCredentials(rpc.Credentials{
 			Type:    utils.CredentialsTypeRobotLocationSecret,
 			Payload: os.Getenv("RDK_ROBOT_LOCATION_SECRET"),
-		})),
+		}),
+			rpc.WithDialDebug(),
+		),
 	)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	defer robot.Close(context.Background())
+	defer robot.Close(ctx)
 	logger.Info("Resources:")
 	logger.Info(robot.ResourceNames())
 
-	// Note that the pin supplied is a placeholder. Please change this to a valid pin.
-	// garagepi
 	garagepiComponent, err := board.FromRobot(robot, "garagepi")
 	if err != nil {
 		logger.Error(err)
