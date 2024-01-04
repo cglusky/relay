@@ -1,0 +1,29 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Garage Door Opener</title>
+</head>
+<body>
+  <button onclick="callDoor()"> DOOR </button>
+
+  <script>
+    function callDoor() {
+      fetch('http://garage.local/door', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ action: 'open' })
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log(data); 
+      })
+      .catch(error => {
+        console.error('Error:', error); 
+      });
+    }
+  </script>
+</body>
+</html>
