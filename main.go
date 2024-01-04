@@ -10,6 +10,7 @@ import (
 	"go.viam.com/rdk/components/board"
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/robot/client"
+	"go.viam.com/rdk/utils"
 	"go.viam.com/utils/rpc"
 )
 
@@ -28,7 +29,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	ctxTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
+	ctxTimeout, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	logger.Infof("Client connecting to %s...", robotHostname)
@@ -36,11 +37,10 @@ func main() {
 		ctxTimeout,
 		robotHostname,
 		logger,
-		client.WithDialOptions(rpc.WithEntityCredentials(
-			os.Getenv("RDK_ROBOT_API_KEY_ID"),
+		client.WithDialOptions(rpc.WithCredentials(
 			rpc.Credentials{
-				Type:    rpc.CredentialsTypeAPIKey,
-				Payload: os.Getenv("RDK_ROBOT_API_KEY"),
+				Type:    utils.CredentialsTypeRobotLocationSecret,
+				Payload: os.Getenv("RDK_ROBOT_LOCATION_SECRET"),
 			}),
 		//rpc.WithDialDebug(),
 		),

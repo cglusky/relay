@@ -4,8 +4,8 @@ go 1.21
 
 require (
 	github.com/joho/godotenv v1.5.1
-	go.viam.com/rdk v0.16.1-0.20231213204358-54ff7101f812
-	go.viam.com/utils v0.1.54
+	go.viam.com/rdk v0.17.0
+	go.viam.com/utils v0.1.57
 )
 
 require (
