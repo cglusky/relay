@@ -7,8 +7,8 @@ import (
 
 // NewStringer creates a new stringer instance with the given value.
 // The value will be converted to a string representation using JSON marshaling.
-func NewStringer(a any) *stringer {
-	return &stringer{
+func NewStringer(a any) stringer {
+	return stringer{
 		toString: a,
 	}
 }
@@ -21,7 +21,7 @@ type stringer struct {
 // String returns the string representation of the value stored in the stringer.
 // The value is marshaled to JSON with indentation for readability.
 // If an error occurs during marshaling, an empty string is returned.
-func (p *stringer) String() string {
+func (p stringer) String() string {
 	b, err := json.MarshalIndent(p.toString, "", "\t")
 	if err != nil {
 		return ""

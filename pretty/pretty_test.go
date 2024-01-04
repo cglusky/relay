@@ -34,7 +34,7 @@ func TestNewStringer(t *testing.T) {
 	}
 }
 
-func TestStringer_String(t *testing.T) {
+func TestStringerString(t *testing.T) {
 	testCases := []struct {
 		name     string
 		input    any
