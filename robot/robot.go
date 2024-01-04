@@ -3,6 +3,7 @@ package robot
 import (
 	"context"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/cglusky/relay/pretty"
@@ -14,30 +15,38 @@ import (
 )
 
 type Robot struct {
-	hostname       string
-	locationSecret string
-	logger         logging.Logger
-	client         *client.RobotClient
+	Client *client.RobotClient
+	Board  board.Board
 }
 
-func New(hostname, locationSecret string) (Robot, error) {
-	if hostname == "" || locationSecret == "" {
-		return Robot{}, errors.New("hostname and locationSecret must be provided")
+func New(ctx context.Context, hostname, locationSecret, boardName string) (Robot, error) {
+	if hostname == "" {
+		return Robot{}, errors.New("hostname must be provided")
+	}
+
+	if locationSecret == "" {
+		return Robot{}, errors.New("locationSecret must be provided")
+	}
+
+	if boardName == "" {
+		return Robot{}, errors.New("boardName must be provided")
 	}
 
 	logger := logging.NewDebugLogger("rdk-client")
-	ctx := context.Background()
 
 	robotClient, err := newClient(ctx, logger, hostname, locationSecret)
 	if err != nil {
 		return Robot{}, err
 	}
 
+	robotBoard, err := board.FromRobot(robotClient, boardName)
+	if err != nil {
+		return Robot{}, err
+	}
+
 	return Robot{
-		hostname:       hostname,
-		locationSecret: locationSecret,
-		logger:         logger,
-		client:         robotClient,
+		Client: robotClient,
+		Board:  robotBoard,
 	}, nil
 }
 
@@ -59,42 +68,43 @@ func newClient(ctx context.Context, logger logging.Logger, hostname string, loca
 		),
 	)
 	if err != nil {
-		logger.Error("err")
+		return nil, err
 	}
 	logger.Infof("RDK client connected to %s...", hostname)
 
 	prettyResourceNames := pretty.NewStringer(robotClient.ResourceNames())
 	logger.Debugf("Resources: %s", prettyResourceNames)
+
 	return robotClient, nil
-
 }
 
-func (r Robot) boardByName(name string) (board.Board, error) {
-	return board.FromRobot(r.client, name)
+func (r Robot) PinByName(pinName string) (board.GPIOPin, error) {
+	return r.Board.GPIOPinByName(pinName)
 }
 
-func (r Robot) PinByName(boardName, pinName string) (board.GPIOPin, error) {
-	board, err := r.boardByName(boardName)
+func (r Robot) GetPinState(ctx context.Context, pinNum int, extra map[string]any) (bool, error) {
+
+	pinName := strconv.Itoa(pinNum)
+
+	pin, err := r.PinByName(pinName)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
-	return board.GPIOPinByName(pinName)
+
+	return pin.Get(ctx, extra)
 }
 
-// rpiGPIOPin, err := rpi.GPIOPinByName("37")
-// if err != nil {
-// 	logger.Error(err)
-// 	return
-// }
+func (r Robot) SetPinState(ctx context.Context, pinNum int, state bool, extra map[string]any) error {
+	pinName := strconv.Itoa(pinNum)
 
-// logger.Infof("GPIOPinByName: %v", rpiGPIOPin)
+	pin, err := r.PinByName(pinName)
+	if err != nil {
+		return err
+	}
 
-// rpiGPIOPin.Set(ctx, false, map[string]interface{}{})
+	return pin.Set(ctx, state, extra)
+}
 
-// time.Sleep(1 * time.Second)
-
-// rpiGPIOPin.Set(ctx, true, map[string]interface{}{})
-
-func (r *Robot) Close(ctx context.Context) {
-	r.client.Close(ctx)
+func (r Robot) Close(ctx context.Context) {
+	r.Client.Close(ctx)
 }
