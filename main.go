@@ -3,20 +3,36 @@ package main
 import (
 	"context"
 	"os"
-	"time"
+	"os/signal"
+	"syscall"
 
-	"github.com/cglusky/relay/pretty"
+	"github.com/cglusky/relay/robot"
 	"github.com/joho/godotenv"
-	"go.viam.com/rdk/components/board"
+
 	"go.viam.com/rdk/logging"
-	"go.viam.com/rdk/robot/client"
-	"go.viam.com/rdk/utils"
-	"go.viam.com/utils/rpc"
 )
 
 func main() {
 
-	logger := logging.NewDebugLogger("rdk-client")
+	logger := logging.NewLogger("relay-main")
+	if os.Getenv("RDK_PROFILE") == "development" {
+		logger = logging.NewDebugLogger("relay-main")
+	}
+
+	// Create a context that is cancelled when a termination signal is received.
+	// This context is parent and used to cancel all other contexts.
+	mainCtx, mainCancel := context.WithCancel(context.Background())
+	defer mainCancel()
+
+	// Setup termination signals
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+	// Wait for a termination signal
+	go func() {
+		<-sig
+		logger.Infof("Termination signal received. Stopping server...")
+		mainCancel()
+	}()
 
 	err := godotenv.Load()
 	if err != nil {
@@ -28,53 +44,31 @@ func main() {
 		logger.Fatal("No RDK_ROBOT_HOSTNAME found in env")
 	}
 
-	ctx := context.Background()
-	ctxTimeout, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
+	robotLocationSecret := os.Getenv("RDK_ROBOT_LOCATION_SECRET")
+	if robotLocationSecret == "" {
+		logger.Fatal("No RDK_ROBOT_LOCATION_SECRET found in env")
+	}
 
-	logger.Infof("Client connecting to %s...", robotHostname)
-	robot, err := client.New(
-		ctxTimeout,
-		robotHostname,
-		logger,
-		client.WithDialOptions(rpc.WithCredentials(
-			rpc.Credentials{
-				Type:    utils.CredentialsTypeRobotLocationSecret,
-				Payload: os.Getenv("RDK_ROBOT_LOCATION_SECRET"),
-			}),
-		//rpc.WithDialDebug(),
-		),
-	)
+	robotBoardName := os.Getenv("RDK_ROBOT_BOARD_NAME")
+	if robotBoardName == "" {
+		logger.Fatal("No RDK_ROBOT_BOARD_NAME found in env")
+	}
+
+	robot, err := robot.New(mainCtx, robotHostname, robotLocationSecret, robotBoardName)
 	if err != nil {
 		logger.Fatal(err)
 	}
-	logger.Infof("Client connected to %s...", robotHostname)
+	defer robot.Close(mainCtx)
 
-	defer robot.Close(ctx)
+	logger.Info("Robot created")
+	<-mainCtx.Done()
+	logger.Info("Robot closed")
 
-	prettyResourceNames := pretty.NewStringer(robot.ResourceNames())
+	// pinState, err := robot.GetPinState(mainCtx, 37, map[string]any{})
+	// if err != nil {
+	// 	logger.Errorf("Error getting pin state.  Pin:%d %s", 37, err)
+	// }
 
-	logger.Infof("Resources: %s", prettyResourceNames)
-
-	// garagepi
-	rpi, err := board.FromRobot(robot, "garagepi")
-	if err != nil {
-		logger.Error(err)
-		return
-	}
-
-	rpiGPIOPin, err := rpi.GPIOPinByName("37")
-	if err != nil {
-		logger.Error(err)
-		return
-	}
-
-	logger.Infof("GPIOPinByName: %v", rpiGPIOPin)
-
-	rpiGPIOPin.Set(ctx, false, map[string]interface{}{})
-
-	time.Sleep(1 * time.Second)
-
-	rpiGPIOPin.Set(ctx, true, map[string]interface{}{})
+	// logger.Infof("Pin State: %v", pinState)
 
 }

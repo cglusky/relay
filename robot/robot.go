@@ -41,7 +41,7 @@ func New(ctx context.Context, hostname, locationSecret, boardName string) (Robot
 		return Robot{}, errors.New("boardName must be provided")
 	}
 
-	logger := logging.NewDebugLogger("rdk-client")
+	logger := logging.NewLogger("robot-client")
 
 	robotClient, err := newClient(ctx, logger, hostname, locationSecret)
 	if err != nil {
@@ -87,7 +87,7 @@ func newClient(ctx context.Context, logger logging.Logger, hostname string, loca
 	logger.Infof("RDK client connected to %s...", hostname)
 
 	prettyResourceNames := pretty.NewStringer(robotClient.ResourceNames())
-	logger.Debugf("Resources: %s", prettyResourceNames)
+	logger.Debugf("Robot resources: %s", prettyResourceNames)
 
 	return robotClient, nil
 }
@@ -133,5 +133,8 @@ func (r Robot) SetPinState(ctx context.Context, pinNum int, state bool, extra ma
 // Close closes the RDK client.
 // ctx is the context.
 func (r Robot) Close(ctx context.Context) {
+	if r.Client == nil {
+		return
+	}
 	r.Client.Close(ctx)
 }

@@ -2,23 +2,29 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Garage Door Opener</title>
+  <title>Relay Control</title>
 </head>
 <body>
-  <button onclick="callDoor()"> DOOR </button>
+  <button onclick="callRelay('momentary')"> (()) </button>
 
   <script>
-    function callDoor() {
-      fetch('http://garage.local/door', {
+    function callRelay(action) {
+      fetch('/api/relay', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ action: 'open' })
+        body: JSON.stringify({ action: action })
       })
-      .then(response => response.json())
-      .then(data => {
-        console.log(data); 
+      .then(response => {
+        if (!response.ok) {
+          console.log('Status code:', response.status);
+          throw new Error('response was not ok');
+        }
+        return response.json();
+      })
+      .then(jsonData => {
+        console.log(jsonData); 
       })
       .catch(error => {
         console.error('Error:', error); 
