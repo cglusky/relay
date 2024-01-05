@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"embed"
+	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -73,8 +75,27 @@ func main() {
 	}
 	defer robot.Close(mainCtx)
 
-	logger.Info("Robot created")
+	// Create a new http server instance
+	http.HandleFunc("/api/relay", robot.SetPinStateHandler)
+	http.Handle("/", http.FileServer(http.FS(publicFiles)))
+	server := &http.Server{
+		Addr: ":8080",
+		BaseContext: func(_ net.Listener) context.Context {
+			return mainCtx
+		},
+	}
+
+	// Start the http server
+	go func() {
+		logger.Info("Starting http server on 8080...")
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Fatal("Error starting http server: ", err)
+		}
+		logger.Info("Stopped http server")
+	}()
+
+	logger.Info("Robot server running...")
 	<-mainCtx.Done()
-	logger.Info("Robot closed")
+	logger.Info("Robot server closed")
 
 }

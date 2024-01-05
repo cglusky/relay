@@ -14,7 +14,7 @@
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ action: action })
+        body: JSON.stringify({ "action": action, "pin_num": 37, "pin_state": "low", "duration": 500 })
       })
       .then(response => {
         if (!response.ok) {

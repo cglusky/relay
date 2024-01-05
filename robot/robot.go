@@ -134,7 +134,7 @@ func (r Robot) GetPinState(ctx context.Context, pinNum int, extra map[string]any
 // state is the state to set.
 // extra is a map of extra parameters.
 // Returns an error.
-func (r Robot) SetPinState(ctx context.Context, pinNum int, state pinState, extra map[string]any) error {
+func (r Robot) SetPinState(ctx context.Context, pinNum int, state pinState, duration time.Duration, extra map[string]any) error {
 	pinName := strconv.Itoa(pinNum)
 
 	pin, err := r.PinByName(pinName)
@@ -147,13 +147,25 @@ func (r Robot) SetPinState(ctx context.Context, pinNum int, state pinState, extr
 		return err
 	}
 
-	return pin.Set(ctx, pinStateBool, extra)
+	err = pin.Set(ctx, pinStateBool, extra)
+	if err != nil {
+		return err
+	}
+
+	// Momentary switch if duration is greater than 0
+	if duration > 0 {
+		time.Sleep(duration)
+		return pin.Set(ctx, !pinStateBool, extra)
+	}
+
+	return nil
 }
 
 type RobotRequest struct {
 	Action   string         `json:"action"`
 	PinNum   int            `json:"pin_num"`
 	PinState pinState       `json:"pin_state"`
+	Duration int            `json:"duration"`
 	Extra    map[string]any `json:"extra"`
 }
 
@@ -208,7 +220,12 @@ func (r Robot) SetPinStateHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	err = r.SetPinState(ctx, rr.PinNum, rr.PinState, rr.Extra)
+	var duration time.Duration
+	if rr.Duration > 0 {
+		duration = time.Duration(rr.Duration) * time.Millisecond
+	}
+
+	err = r.SetPinState(ctx, rr.PinNum, rr.PinState, duration, rr.Extra)
 	if err != nil {
 		r.logger.Errorf("Error setting pin %d state: %s", rr.PinNum, err)
 	}
