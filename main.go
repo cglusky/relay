@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"embed"
+	"io/fs"
 	"net"
 	"net/http"
 	"os"
@@ -75,9 +76,14 @@ func main() {
 	}
 	defer robot.Close(mainCtx)
 
+	publicFS, err := fs.Sub(publicFiles, "public")
+	if err != nil {
+		logger.Fatal("Error creating public file system: ", err)
+	}
+
 	// Create a new http server instance
 	http.HandleFunc("/api/relay", robot.SetPinStateHandler)
-	http.Handle("/", http.FileServer(http.FS(publicFiles)))
+	http.Handle("/", http.FileServer(http.FS(publicFS)))
 	server := &http.Server{
 		Addr: ":8080",
 		BaseContext: func(_ net.Listener) context.Context {

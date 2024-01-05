@@ -230,6 +230,28 @@ func (r Robot) SetPinStateHandler(w http.ResponseWriter, req *http.Request) {
 		r.logger.Errorf("Error setting pin %d state: %s", rr.PinNum, err)
 	}
 
+	var pinState pinState
+	if duration == 0 {
+		pinStateBool, _ := pinStateToBool(rr.PinState)
+		pinState = boolToPinState(!pinStateBool)
+	} else {
+		pinState = rr.PinState
+	}
+	respBody := RobotResponse{
+		PinNum:   rr.PinNum,
+		PinState: pinState,
+	}
+
+	err = json.NewEncoder(w).Encode(respBody)
+	if err != nil {
+		r.logger.Errorf("Error encoding response body: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
 }
 
 // pinStateToBool converts a pinState to a bool.
