@@ -85,7 +85,7 @@ func main() {
 	http.HandleFunc("/api/relay", robot.SetPinStateHandler)
 	http.Handle("/", http.FileServer(http.FS(publicFS)))
 	server := &http.Server{
-		Addr: ":8080",
+		Addr: ":8888",
 		BaseContext: func(_ net.Listener) context.Context {
 			return mainCtx
 		},
@@ -93,7 +93,7 @@ func main() {
 
 	// Start the http server
 	go func() {
-		logger.Info("Starting http server on 8080...")
+		logger.Info("Starting http server on 8888...")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Fatal("Error starting http server: ", err)
 		}
