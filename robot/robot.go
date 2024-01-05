@@ -205,7 +205,6 @@ func (r Robot) GetPinStateHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 
 }
 
@@ -228,10 +227,11 @@ func (r Robot) SetPinStateHandler(w http.ResponseWriter, req *http.Request) {
 	err = r.SetPinState(ctx, rr.PinNum, rr.PinState, duration, rr.Extra)
 	if err != nil {
 		r.logger.Errorf("Error setting pin %d state: %s", rr.PinNum, err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	var pinState pinState
-	if duration == 0 {
+	if rr.Duration > 0 {
 		pinStateBool, _ := pinStateToBool(rr.PinState)
 		pinState = boolToPinState(!pinStateBool)
 	} else {
@@ -250,7 +250,6 @@ func (r Robot) SetPinStateHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 
 }
 
