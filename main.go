@@ -14,6 +14,7 @@ import (
 
 func main() {
 
+	// Create a logger based on environment
 	logger := logging.NewLogger("relay-main")
 	if os.Getenv("RDK_PROFILE") == "development" {
 		logger = logging.NewDebugLogger("relay-main")
@@ -24,7 +25,7 @@ func main() {
 	mainCtx, mainCancel := context.WithCancel(context.Background())
 	defer mainCancel()
 
-	// Setup termination signals
+	// Setup termination channel and signals
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 	// Wait for a termination signal
@@ -34,6 +35,7 @@ func main() {
 		mainCancel()
 	}()
 
+	// Load environment variables
 	err := godotenv.Load()
 	if err != nil {
 		logger.Fatal("Error loading .env file")
@@ -54,9 +56,10 @@ func main() {
 		logger.Fatal("No RDK_ROBOT_BOARD_NAME found in env")
 	}
 
+	// Create a new robot instance
 	robot, err := robot.New(mainCtx, robotHostname, robotLocationSecret, robotBoardName)
 	if err != nil {
-		logger.Fatal(err)
+		logger.Fatal("Error creating new robot instance: ", err)
 	}
 	defer robot.Close(mainCtx)
 
