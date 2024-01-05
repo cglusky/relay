@@ -17,9 +17,10 @@ import (
 	"go.viam.com/utils/rpc"
 )
 
-// Robot is a high-level interface to the RDK client.
+// Robot is a high-level interface to the RDK client and board with logger.
 // Client is the RDK client.
-// Board is the robot board.
+// Board is a robot board interface.
+// logger is a zap logger interface.
 type Robot struct {
 	Client *client.RobotClient
 	Board  board.Board
@@ -94,6 +95,13 @@ func newClient(ctx context.Context, logger logging.Logger, hostname string, loca
 	return robotClient, nil
 }
 
+type pinState string
+
+const (
+	pinStateHigh pinState = "high"
+	pinStateLow  pinState = "low"
+)
+
 // PinByName returns a GPIOPin by name.
 // pinName is the name of the pin.
 func (r Robot) PinByName(pinName string) (board.GPIOPin, error) {
@@ -141,13 +149,6 @@ func (r Robot) SetPinState(ctx context.Context, pinNum int, state pinState, extr
 
 	return pin.Set(ctx, pinStateBool, extra)
 }
-
-type pinState string
-
-const (
-	pinStateHigh pinState = "high"
-	pinStateLow  pinState = "low"
-)
 
 type RobotRequest struct {
 	Action   string         `json:"action"`
