@@ -3,7 +3,9 @@ package robot
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -21,6 +23,7 @@ import (
 type Robot struct {
 	Client *client.RobotClient
 	Board  board.Board
+	logger logging.Logger
 }
 
 // New creates a new Robot instance.
@@ -28,7 +31,7 @@ type Robot struct {
 // locationSecret is the location secret of the robot.
 // boardName is the name of the board to use.
 // Returns a Robot instance and an error.
-func New(ctx context.Context, hostname, locationSecret, boardName string) (Robot, error) {
+func New(ctx context.Context, logger logging.Logger, hostname, locationSecret, boardName string) (Robot, error) {
 	if hostname == "" {
 		return Robot{}, errors.New("hostname must be provided")
 	}
@@ -40,8 +43,6 @@ func New(ctx context.Context, hostname, locationSecret, boardName string) (Robot
 	if boardName == "" {
 		return Robot{}, errors.New("boardName must be provided")
 	}
-
-	logger := logging.NewLogger("robot-client")
 
 	robotClient, err := newClient(ctx, logger, hostname, locationSecret)
 	if err != nil {
@@ -56,6 +57,7 @@ func New(ctx context.Context, hostname, locationSecret, boardName string) (Robot
 	return Robot{
 		Client: robotClient,
 		Board:  robotBoard,
+		logger: logger,
 	}, nil
 }
 
@@ -102,16 +104,21 @@ func (r Robot) PinByName(pinName string) (board.GPIOPin, error) {
 // pinNum is the number of the pin.
 // extra is a map of extra parameters.
 // Returns the state of the pin and an error.
-func (r Robot) GetPinState(ctx context.Context, pinNum int, extra map[string]any) (bool, error) {
+func (r Robot) GetPinState(ctx context.Context, pinNum int, extra map[string]any) (pinState, error) {
 
 	pinName := strconv.Itoa(pinNum)
 
 	pin, err := r.PinByName(pinName)
 	if err != nil {
-		return false, err
+		return pinStateLow, err
 	}
 
-	return pin.Get(ctx, extra)
+	stateBool, err := pin.Get(ctx, extra)
+	if err != nil {
+		return pinStateLow, err
+	}
+	return boolToPinState(stateBool), nil
+
 }
 
 // SetPinState sets the state of a pin.
@@ -119,7 +126,7 @@ func (r Robot) GetPinState(ctx context.Context, pinNum int, extra map[string]any
 // state is the state to set.
 // extra is a map of extra parameters.
 // Returns an error.
-func (r Robot) SetPinState(ctx context.Context, pinNum int, state bool, extra map[string]any) error {
+func (r Robot) SetPinState(ctx context.Context, pinNum int, state pinState, extra map[string]any) error {
 	pinName := strconv.Itoa(pinNum)
 
 	pin, err := r.PinByName(pinName)
@@ -127,7 +134,104 @@ func (r Robot) SetPinState(ctx context.Context, pinNum int, state bool, extra ma
 		return err
 	}
 
-	return pin.Set(ctx, state, extra)
+	pinStateBool, err := pinStateToBool(state)
+	if err != nil {
+		return err
+	}
+
+	return pin.Set(ctx, pinStateBool, extra)
+}
+
+type pinState string
+
+const (
+	pinStateHigh pinState = "high"
+	pinStateLow  pinState = "low"
+)
+
+type RobotRequest struct {
+	Action   string         `json:"action"`
+	PinNum   int            `json:"pin_num"`
+	PinState pinState       `json:"pin_state"`
+	Extra    map[string]any `json:"extra"`
+}
+
+type RobotResponse struct {
+	PinNum   int      `json:"pin_num"`
+	PinState pinState `json:"pin_state"`
+}
+
+// GetPinStateHandler handles a request to get the state of a pin.
+func (r Robot) GetPinStateHandler(w http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+
+	var rr RobotRequest
+	err := json.NewDecoder(req.Body).Decode(&rr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	pinState, err := r.GetPinState(ctx, rr.PinNum, rr.Extra)
+	if err != nil {
+		r.logger.Errorf("Error getting pin %d state: %s", rr.PinNum, err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respBody := RobotResponse{
+		PinNum:   rr.PinNum,
+		PinState: pinState,
+	}
+
+	err = json.NewEncoder(w).Encode(respBody)
+	if err != nil {
+		r.logger.Errorf("Error encoding response body: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+}
+
+// SetPinStateHandler handles a request to set the state of a pin.
+func (r Robot) SetPinStateHandler(w http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+
+	var rr RobotRequest
+	err := json.NewDecoder(req.Body).Decode(&rr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = r.SetPinState(ctx, rr.PinNum, rr.PinState, rr.Extra)
+	if err != nil {
+		r.logger.Errorf("Error setting pin %d state: %s", rr.PinNum, err)
+	}
+
+}
+
+// pinStateToBool converts a pinState to a bool.
+func pinStateToBool(pinState pinState) (bool, error) {
+	switch pinState {
+	case pinStateHigh:
+		return true, nil
+	case pinStateLow:
+		return false, nil
+	default:
+		return false, errors.New("invalid pin state")
+	}
+}
+
+// boolToPinState converts a bool to a pinState.
+func boolToPinState(pinStateBool bool) pinState {
+	if pinStateBool {
+		return pinStateHigh
+	}
+	return pinStateLow
 }
 
 // Close closes the RDK client.

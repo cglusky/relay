@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"embed"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,6 +12,9 @@ import (
 
 	"go.viam.com/rdk/logging"
 )
+
+//go:embed public
+var publicFiles embed.FS
 
 func main() {
 
@@ -57,7 +61,13 @@ func main() {
 	}
 
 	// Create a new robot instance
-	robot, err := robot.New(mainCtx, robotHostname, robotLocationSecret, robotBoardName)
+	robot, err := robot.New(
+		mainCtx,
+		logger,
+		robotHostname,
+		robotLocationSecret,
+		robotBoardName,
+	)
 	if err != nil {
 		logger.Fatal("Error creating new robot instance: ", err)
 	}
@@ -66,12 +76,5 @@ func main() {
 	logger.Info("Robot created")
 	<-mainCtx.Done()
 	logger.Info("Robot closed")
-
-	// pinState, err := robot.GetPinState(mainCtx, 37, map[string]any{})
-	// if err != nil {
-	// 	logger.Errorf("Error getting pin state.  Pin:%d %s", 37, err)
-	// }
-
-	// logger.Infof("Pin State: %v", pinState)
 
 }
