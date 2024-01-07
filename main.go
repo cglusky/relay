@@ -76,6 +76,7 @@ func main() {
 	}
 	defer robot.Close(mainCtx)
 
+	// Create a new file system for the file server
 	publicFS, err := fs.Sub(publicFiles, "public")
 	if err != nil {
 		logger.Fatal("Error creating public file system: ", err)
@@ -85,7 +86,7 @@ func main() {
 	http.HandleFunc("/api/relay", robot.SetPinStateHandler)
 	http.Handle("/", http.FileServer(http.FS(publicFS)))
 	server := &http.Server{
-		Addr: ":8888",
+		Addr: ":8484",
 		BaseContext: func(_ net.Listener) context.Context {
 			return mainCtx
 		},
@@ -93,13 +94,14 @@ func main() {
 
 	// Start the http server
 	go func() {
-		logger.Info("Starting http server on 8888...")
+		logger.Info("Starting http server on 8484...")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Fatal("Error starting http server: ", err)
 		}
 		logger.Info("Stopped http server")
 	}()
 
+	// Block until the main context is cancelled
 	logger.Info("Robot server running...")
 	<-mainCtx.Done()
 	logger.Info("Robot server closed")
