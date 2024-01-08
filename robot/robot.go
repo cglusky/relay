@@ -126,8 +126,10 @@ func (r Robot) GetPinState(ctx context.Context, pinNum int, extra map[string]any
 }
 
 // SetPinState sets the state of a pin.
-// pinNum is the number of the pin.
-// state is the state to set.
+// pinNum is the gpio number of the pin.
+// state is the high/low state to set.
+// duration is the duration to set the pin state for.
+// If duration is greater than 0, the pin will be set to original state after the duration.
 // extra is a map of extra parameters.
 // Returns an error.
 func (r Robot) SetPinState(ctx context.Context, pinNum int, state pinState, duration time.Duration, extra map[string]any) error {
