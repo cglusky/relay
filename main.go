@@ -86,11 +86,18 @@ func main() {
 		logger.Fatal("Error creating public file system: ", err)
 	}
 
+	// Get the port to listen on from the environment
+	// Default to 8484
+	port := os.Getenv("RDK_HTTP_PORT")
+	if port == "" {
+		port = "8484"
+	}
+
 	// Create a new http server instance
 	http.HandleFunc("/api/relay", robot.SetPinStateHandler)
 	http.Handle("/", http.FileServer(http.FS(publicFS)))
 	server := &http.Server{
-		Addr: ":8484",
+		Addr: ":" + port,
 		BaseContext: func(_ net.Listener) context.Context {
 			return mainCtx
 		},
