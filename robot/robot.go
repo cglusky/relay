@@ -20,7 +20,7 @@ import (
 // Robot is a high-level interface to the RDK client and board with logger.
 // Client is the RDK client.
 // Board is a robot board interface.
-// logger is a zap logger interface.
+// logger is an RDK logger interface.
 type Robot struct {
 	Client *client.RobotClient
 	Board  board.Board
