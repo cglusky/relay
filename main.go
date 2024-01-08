@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/cglusky/relay/pretty"
 	"github.com/cglusky/relay/robot"
 	"github.com/joho/godotenv"
 
@@ -75,6 +76,9 @@ func main() {
 		logger.Fatal("Error creating new robot instance: ", err)
 	}
 	defer robot.Close(mainCtx)
+
+	prettyResourceNames := pretty.NewStringer(robot.Client.ResourceNames())
+	logger.Debugf("Robot resources: %s", prettyResourceNames)
 
 	// Create a new file system for the file server
 	publicFS, err := fs.Sub(publicFiles, "public")

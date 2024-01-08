@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cglusky/relay/pretty"
 	"go.viam.com/rdk/components/board"
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/robot/client"
@@ -88,9 +87,6 @@ func newClient(ctx context.Context, logger logging.Logger, hostname string, loca
 		return nil, err
 	}
 	logger.Infof("RDK client connected to %s...", hostname)
-
-	prettyResourceNames := pretty.NewStringer(robotClient.ResourceNames())
-	logger.Debugf("Robot resources: %s", prettyResourceNames)
 
 	return robotClient, nil
 }
